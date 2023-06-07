@@ -1,34 +1,13 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/index.css') }}">
     <title>PDF Uploader</title>
-    <style>
-        .spinner {
-            margin: 100px auto;
-            width: 50px;
-            height: 50px;
-            border: 16px solid #f3f3f3;
-            border-top: 16px solid #3498db;
-            border-radius: 50%;
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
 </head>
 
 <body>
-    <div id="loader" style="display: none;">
-        <img src="loader.gif"> <!-- Asegúrate de tener un archivo gif de carga en tu directorio de proyecto. -->
+    <div id="spinner" style="display: none;">
     </div>
     <h1>Sube el fichero PDF</h1>
     <form method="POST" action="/upload" enctype="multipart/form-data">
@@ -37,18 +16,24 @@
     </form>
     <h1>Envia la peticion al modelo gpt3.5-turbo</h1>
     <form onsubmit="event.preventDefault(); sendPrompt();">
-        <input type="text" id="prompt" placeholder="Escribe tu pregunta"><br><br>
+        <input class="input-prompt" type="text" id="prompt" placeholder="Escribe tu pregunta"><br><br>
         <input type="submit" value="Send Prompt">
     </form>
 </body>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="crossorigin="anonymous"></script>
 <script>
     var socket = io.connect('http://' + document.domain + ':' + location.port);
+    // Esto imprimirá en la consola cuando el cliente se conecte con éxito al socket
+    socket.on('connect', function() {
+        console.log('Conectado al servidor.');
+    });
+
     function sendPrompt() {
         var prompt = document.getElementById('prompt').value;
 
         // Muestra el loader.
-        document.getElementById('loader').style.display = 'block';
+        //document.getElementById('loader').style.display = 'block';
 
         // Envía el texto al servidor.
         socket.emit('generate_summary', prompt);
@@ -65,6 +50,27 @@
         document.body.appendChild(p);
     });
 
+    // escucha el evento pdf_processed y muestra el mensaje cuando el archivo se ha subido correctamente
+    socket.on('pdf_processing_done', function (message) {
+        // Esto imprimirá el mensaje en la consola cuando se reciba el evento 'pdf_processing_done'
+        console.log('Mensaje recibido: ', message);
+
+        var p = document.createElement('p');
+        p.textContent = message;
+        alert(message);
+        document.body.appendChild(p);
+    });
+
+
+    // socket.on('pdf_processed', function (message) {
+    //     // Esto imprimirá el mensaje en la consola cuando se reciba el evento 'pdf_processed'
+    //     console.log('Mensaje recibido: ', message);
+
+    //     var p = document.createElement('p');
+    //     p.textContent = message;
+    //     alert(message);
+    //     document.body.appendChild(p);
+    // });
 </script>
 
 

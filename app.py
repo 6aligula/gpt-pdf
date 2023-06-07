@@ -7,11 +7,11 @@ from wtforms import SubmitField
 import openai
 import time 
 from openai.error import RateLimitError
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, send
 from flask_cors import CORS
 import os
 
-openai.api_key = os.getenv("OPEN_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 CORS(app) 
 socketio = SocketIO(app)
@@ -62,7 +62,7 @@ def handle_generate_summary(prompt):
     emit('new_summary', "Se ha completado con exito todo el proceso")
     return " ".join(summaries)
 
-
+# @socketio.on('pdf_processed_input')
 def extract_text_from_pdf(file_path):
     pdf_file_obj = open(file_path, 'rb')
     pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
@@ -72,17 +72,6 @@ def extract_text_from_pdf(file_path):
         text += page_obj.extractText()
     pdf_file_obj.close()
     return text
-# def extract_text_from_pdf(file_path):
-#     pdf_file_obj = open(file_path, 'rb')
-#     pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
-#     text = ""
-#     for page_num in range(len(pdf_reader.pages)):
-#         page_obj = pdf_reader.pages[page_num]
-#         text += page_obj.extract_text()
-#     pdf_file_obj.close()
-#     return text
-
-
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -94,6 +83,9 @@ def upload():
         pdf.save(filename)
         pdf_text = extract_text_from_pdf(filename)
         print(f"Text length: {len(pdf_text)}")  # Debug point
+        if pdf_text:
+            socketio.emit('pdf_processing_done', "El PDF ha sido procesado correctamente.")
+            print("pdf lleno ")
     return redirect(url_for('home'))
 
 @app.route('/')
