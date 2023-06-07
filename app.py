@@ -67,22 +67,11 @@ def extract_text_from_pdf(file_path):
     pdf_file_obj = open(file_path, 'rb')
     pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
     text = ""
-    for page_num in range(pdf_reader.numPages):
-        page_obj = pdf_reader.getPage(page_num)
-        text += page_obj.extractText()
+    for page_num in range(len(pdf_reader.pages)):
+        page_obj = pdf_reader.pages[page_num]
+        text += page_obj.extract_text()
     pdf_file_obj.close()
     return text
-# def extract_text_from_pdf(file_path):
-#     pdf_file_obj = open(file_path, 'rb')
-#     pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
-#     text = ""
-#     for page_num in range(len(pdf_reader.pages)):
-#         page_obj = pdf_reader.pages[page_num]
-#         text += page_obj.extract_text()
-#     pdf_file_obj.close()
-#     return text
-
-
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -103,27 +92,4 @@ def home():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
-
-# def get_summary(prompt ,text):
-#     summaries = []
-#     max_length = 1000  # ajusta este valor según sea necesario
-
-#     # divide el texto en secciones
-#     sections = [text[i:i + max_length] for i in range(0, len(text), max_length)]
-
-#     for section in sections:
-#         messages = [
-#             {"role": "system", "content": "Tu eres un amable asistente"},
-#             {"role": "user", "content": f"{prompt} {section}"}
-#         ]
-
-#         response = openai.ChatCompletion.create(
-#           model="gpt-3.5-turbo",
-#           messages=messages,
-#           temperature=0.3,
-#         )
-
-#         summaries.append(response.choices[0].message["content"])
-
-#     return " ".join(summaries)
 
