@@ -33,7 +33,7 @@
         var prompt = document.getElementById('prompt').value;
 
         // Muestra el loader.
-        //document.getElementById('loader').style.display = 'block';
+        document.getElementById('spinner').style.display = 'block';
 
         // Envía el texto al servidor.
         socket.emit('generate_summary', prompt);
@@ -42,7 +42,7 @@
     // Escucha el evento 'new_summary' y oculta el loader cuando recibas la respuesta.
     socket.on('new_summary', function (summary) {
         // Oculta el loader.
-        document.getElementById('loader').style.display = 'none';
+        document.getElementById('spinner').style.display = 'none';
 
         // Añade el nuevo resumen a la página.
         var p = document.createElement('p');
