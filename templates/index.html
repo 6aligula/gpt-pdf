@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PDF Uploader</title>
+    <style>
+        .spinner {
+            margin: 100px auto;
+            width: 50px;
+            height: 50px;
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid #3498db;
+            border-radius: 50%;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loader" style="display: none;">
+        <img src="loader.gif"> <!-- Asegúrate de tener un archivo gif de carga en tu directorio de proyecto. -->
+    </div>
+    <h1>Sube el fichero PDF</h1>
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="pdf"><br><br>
+        <input type="submit" value="Upload">
+    </form>
+    <h1>Envia la peticion al modelo gpt3.5-turbo</h1>
+    <form onsubmit="event.preventDefault(); sendPrompt();">
+        <input type="text" id="prompt" placeholder="Escribe tu pregunta"><br><br>
+        <input type="submit" value="Send Prompt">
+    </form>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script>
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    function sendPrompt() {
+        var prompt = document.getElementById('prompt').value;
+
+        // Muestra el loader.
+        document.getElementById('loader').style.display = 'block';
+
+        // Envía el texto al servidor.
+        socket.emit('generate_summary', prompt);
+    }
+
+    // Escucha el evento 'new_summary' y oculta el loader cuando recibas la respuesta.
+    socket.on('new_summary', function (summary) {
+        // Oculta el loader.
+        document.getElementById('loader').style.display = 'none';
+
+        // Añade el nuevo resumen a la página.
+        var p = document.createElement('p');
+        p.textContent = summary;
+        document.body.appendChild(p);
+    });
+
+</script>
+
+
+</html>
