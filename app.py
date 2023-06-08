@@ -62,14 +62,13 @@ def handle_generate_summary(prompt):
     emit('new_summary', "finish")
     return " ".join(summaries)
 
-# @socketio.on('pdf_processed_input')
 def extract_text_from_pdf(file_path):
     pdf_file_obj = open(file_path, 'rb')
     pdf_reader = PyPDF2.PdfReader(pdf_file_obj)
     text = ""
-    for page_num in range(len(pdf_reader.pages)):
-        page_obj = pdf_reader.pages[page_num]
-        text += page_obj.extract_text()
+    for page_num in range(pdf_reader.numPages):
+        page_obj = pdf_reader.getPage(page_num)
+        text += page_obj.extractText()
     pdf_file_obj.close()
     return text
 
