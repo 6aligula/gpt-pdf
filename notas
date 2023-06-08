@@ -1,0 +1,3 @@
+nuevos:
+conda install -c conda-forge gevent
+conda install -c conda-forge eventlet
