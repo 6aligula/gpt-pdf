@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/index.css') }}">
     <title>PDF Uploader</title>
 </head>
@@ -10,33 +13,51 @@
     <div id="spinner" style="display: none;">
     </div>
     <h1>Sube el fichero PDF</h1>
-    <form method="POST" action="/upload" enctype="multipart/form-data">
-        <input type="file" name="pdf"><br><br>
-        <input type="submit" value="Upload">
+    <form id="uploadForm" method="POST" action="/upload" enctype="multipart/form-data"
+        onsubmit="event.preventDefault(); uploadPDF();">
+        <input class="button file-input" type="file" name="pdf"><br><br>
+        <input class="button prompt-button" type="submit" value="Upload">
     </form>
-    <h1>Envia la peticion al modelo gpt3.5-turbo</h1>
+
+    </br>
+    <div id="message"></div>
+    </br>
+    <h1>Envia la petición al modelo gpt3.5-turbo</h1>
     <form onsubmit="event.preventDefault(); sendPrompt();">
         <input class="input-prompt" type="text" id="prompt" placeholder="Escribe tu pregunta"><br><br>
-        <input type="submit" value="Send Prompt">
+        <input class="button prompt-button" type="submit" value="Send Prompt">
     </form>
+
+    <div id="modelResponse"></div>
 </body>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+    integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 <script>
     var socket = io.connect('http://' + document.domain + ':' + location.port);
     // Esto imprimirá en la consola cuando el cliente se conecte con éxito al socket
-    socket.on('connect', function() {
+    socket.on('connect', function () {
         console.log('Conectado al servidor.');
     });
 
     function sendPrompt() {
         var prompt = document.getElementById('prompt').value;
+        if (!prompt) {
+            toastr.error("Falta escribir una peticion")
+        } else {
+            // Muestra el loader.
+            document.getElementById('spinner').style.display = 'block';
 
-        // Muestra el loader.
-        document.getElementById('spinner').style.display = 'block';
+            // Envía el texto al servidor.
+            socket.emit('generate_summary', prompt);
+            toastr.success('Peticion enviada a Chat_GPT3.5-Turbo');
+            //elimino el mensaje de la subida de pdf
+            document.getElementById('message').innerHTML = "";
 
-        // Envía el texto al servidor.
-        socket.emit('generate_summary', prompt);
+        }
+
     }
 
     // Escucha el evento 'new_summary' y oculta el loader cuando recibas la respuesta.
@@ -44,34 +65,75 @@
         // Oculta el loader.
         document.getElementById('spinner').style.display = 'none';
 
-        // Añade el nuevo resumen a la página.
+        var messageDiv = document.getElementById('modelResponse');
         var p = document.createElement('p');
         p.textContent = summary;
-        document.body.appendChild(p);
+
+        // Añade el nuevo resumen al principio de la lista de mensajes.
+        messageDiv.insertBefore(p, messageDiv.firstChild);
+        if (summary === 'finish') {
+            document.getElementById('prompt').value = "";
+            toastr.success('El proceso ha terminado correctamente', 'Success');
+        }
     });
 
     // escucha el evento pdf_processed y muestra el mensaje cuando el archivo se ha subido correctamente
     socket.on('pdf_processing_done', function (message) {
         // Esto imprimirá el mensaje en la consola cuando se reciba el evento 'pdf_processing_done'
-        console.log('Mensaje recibido: ', message);
+        //console.log('Mensaje recibido: ', message);
+        // Oculta el spinner.
+        document.getElementById('spinner').style.display = 'none';
 
+        var messageDiv = document.getElementById('message');
+        messageDiv.style.color = 'green';
+
+        messageDiv.textContent = message;
+    });
+    // escucha el evento pdf_processing_error para manejar el error de subida de pdf 
+    socket.on('pdf_processing_error', function (message) {
+        console.error('Error durante el procesamiento del PDF:', message);
+        // Oculta el spinner.
+        document.getElementById('spinner').style.display = 'none';
+        // Muestra el mensaje de error.
+        var messageDiv = document.getElementById('message');
+        messageDiv.style.color = 'red';
+        //messageDiv.textContent = message;
         var p = document.createElement('p');
         p.textContent = message;
-        alert(message);
-        document.body.appendChild(p);
+
+        // Prepend the new message at the beginning of the 'message' div
+        messageDiv.insertBefore(p, messageDiv.firstChild);
     });
 
+    function uploadPDF() {
+        // Muestra el spinner cuando se presiona el botón de upload.
+        document.getElementById('spinner').style.display = 'block';
+        var form = document.getElementById('uploadForm');
+        // obtén la entrada del archivo
+        var fileInput = form.querySelector('input[type=file]');
 
-    // socket.on('pdf_processed', function (message) {
-    //     // Esto imprimirá el mensaje en la consola cuando se reciba el evento 'pdf_processed'
-    //     console.log('Mensaje recibido: ', message);
+        // comprueba si se ha seleccionado un archivo
+        if (fileInput.files.length > 0) {
+            var formData = new FormData(form);
 
-    //     var p = document.createElement('p');
-    //     p.textContent = message;
-    //     alert(message);
-    //     document.body.appendChild(p);
-    // });
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).catch(error => {
+                var messageDiv = document.getElementById('message');
+                messageDiv.style.color = 'red';
+                messageDiv.textContent = error;
+                console.error('Hubo un problema con la operación de envío:', error);
+            });
+        } else {
+            // var messageDiv = document.getElementById('message');
+            // messageDiv.style.color = 'red';
+            // messageDiv.textContent = "Por favor, selecciona un archivo antes de subir.";
+            toastr.error('Primero debes seleccionar un archivo');
+            document.getElementById('spinner').style.display = 'none'; // ocultar el spinner
+        }
+    }
+
 </script>
-
 
 </html>
